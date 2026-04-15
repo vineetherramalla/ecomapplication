@@ -278,7 +278,7 @@ function AdminProductsPage() {
                   </span>
                 )}
                 {product.isNew && (
-                  <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-600">
+                  <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
                     New
                   </span>
                 )}

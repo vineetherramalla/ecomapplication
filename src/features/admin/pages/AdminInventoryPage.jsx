@@ -184,7 +184,7 @@ function AdminInventoryPage() {
               <div className="flex flex-col items-center gap-1">
                 <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-widest ${
                   item.stock > 10 
-                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm shadow-emerald-500/5' 
+                  ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5' 
                   : 'bg-rose-50 text-rose-600 border border-rose-100'
                 }`}>
                   {item.stock} UNITS

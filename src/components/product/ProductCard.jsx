@@ -53,7 +53,7 @@ function ProductCard({ product, viewMode = 'grid' }) {
                 </span>
               )}
               {product.isNew && (
-                <span className="rounded-sm bg-emerald-600 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-white shadow-sm sm:px-2.5 sm:py-1 sm:text-[9px]">
+                <span className="rounded-sm bg-primary px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-textMain shadow-sm sm:px-2.5 sm:py-1 sm:text-[9px]">
                   New Arrival
                 </span>
               )}
@@ -120,7 +120,7 @@ function ProductCard({ product, viewMode = 'grid' }) {
             </span>
           )}
           {product.isNew && (
-            <span className="rounded-sm bg-emerald-600 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] text-white shadow-sm sm:px-2 sm:text-[9px]">
+            <span className="rounded-sm bg-primary px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] text-textMain shadow-sm sm:px-2 sm:text-[9px]">
               New Arrival
             </span>
           )}

@@ -166,7 +166,7 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
                 Brand: <span className="text-textMain">{product?.brandName || getBrandName(product?.brand, brands) || 'N/A'}</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                <span className="h-1 w-1 rounded-full bg-primary" />
                 Availability: <span className="text-textMain">{Number(product?.stock ?? 0) > 0 ? `${product.stock} Units` : 'On Request'}</span>
               </span>
             </div>
