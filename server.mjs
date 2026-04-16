@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, 'dist');
 const indexFile = join(distDir, 'index.html');
-const DEFAULT_API_PROXY_TARGET = 'https://ecommerce-c9be.onrender.com';
+const DEFAULT_API_PROXY_TARGET = 'http://192.168.0.113:8000';
 
 const loadDotEnv = async () => {
   const envFile = join(__dirname, '.env');
