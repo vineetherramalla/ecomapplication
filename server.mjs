@@ -123,7 +123,9 @@ const proxyRequest = (request, response, requestUrl, upstreamOrigin) => {
 
   const upstreamUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, `${upstreamOrigin}/`);
   const proxyTransport = upstreamUrl.protocol === 'https:' ? httpsRequest : httpRequest;
-  const headers = { ...request.headers, host: upstreamUrl.host };
+    // point to the external domain instead of the private upstream address.
+  const headers = { ...request.headers, host: request.headers.host || upstreamUrl.host };
+
 
   Object.keys(headers).forEach((header) => {
     if (HOP_BY_HOP_HEADERS.has(header.toLowerCase())) {
