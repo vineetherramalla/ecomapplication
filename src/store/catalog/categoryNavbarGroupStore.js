@@ -1,4 +1,4 @@
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 const STORAGE_KEY = 'category_navbar_group_overrides';
 

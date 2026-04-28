@@ -1,5 +1,6 @@
-import apiClient from './apiClient';
+import api, { publicApi } from './axiosInstance';
 import { normalizeBrands } from './apiUtils';
+import { API_ENDPOINTS } from './endpoints';
 
 const BRAND_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -31,8 +32,8 @@ export const getBrands = async (options = {}) => {
     return brandsCache.promise;
   }
 
-  const request = apiClient
-    .get('/brands/')
+  const request = publicApi
+    .get(API_ENDPOINTS.products.brands)
     .then((response) => {
       const data = normalizeBrands(response);
       return updateBrandsCache(data);
@@ -46,12 +47,24 @@ export const getBrands = async (options = {}) => {
 };
 
 export const createBrand = async (data) => {
-  const response = await apiClient.post('/brands/', data);
+  const response = await api.post(API_ENDPOINTS.products.brands, data);
   brandsCache = { data: null, timestamp: 0, promise: null };
   return response.data;
 };
 
 export const getBrandById = async (id) => {
-  const response = await apiClient.get(`/brands/${id}/`);
+  const response = await publicApi.get(API_ENDPOINTS.products.brand(id));
+  return response.data;
+};
+
+export const updateBrand = async (id, data) => {
+  const response = await api.put(API_ENDPOINTS.products.brand(id), data);
+  brandsCache = { data: null, timestamp: 0, promise: null };
+  return response.data;
+};
+
+export const deleteBrand = async (id) => {
+  const response = await api.delete(API_ENDPOINTS.products.brand(id));
+  brandsCache = { data: null, timestamp: 0, promise: null };
   return response.data;
 };

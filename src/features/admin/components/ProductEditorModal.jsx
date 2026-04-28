@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Check, Edit2, Trash2, X } from 'lucide-react';
 import AdminModal from './AdminModal';
 import { getTopLevelCategories } from '../utils/adminUtils';
-import { createBrand } from '../../../api/brandApi';
+import { createBrand, updateBrand, deleteBrand } from '../../../api/brandApi';
 
 import { resolveAssetUrl } from '../../../api/apiUtils';
 import { showToast } from '../../../utils/helpers';
@@ -94,6 +95,7 @@ function ProductEditorModal({
   categories = [],
   subcategoriesByCategory = {},
   submitting,
+  error,
   brands = [],
   productFlags = [],
   setBrands,
@@ -105,7 +107,7 @@ function ProductEditorModal({
   useEffect(() => {
     const handlePaste = (event) => {
       if (!open) return;
-      
+
       const items = event.clipboardData?.items;
       if (!items) return;
 
@@ -132,9 +134,16 @@ function ProductEditorModal({
   const [showNewBrandInput, setShowNewBrandInput] = useState(false);
   const [newBrandName, setNewBrandName] = useState('');
   const [creatingBrand, setCreatingBrand] = useState(false);
+  const [editingBrandId, setEditingBrandId] = useState(null);
+  const [editBrandName, setEditBrandName] = useState('');
+
+  const [sectionBeingRenamed, setSectionBeingRenamed] = useState(null);
+  const [renameSectionValue, setRenameSectionValue] = useState('');
 
   useEffect(() => {
     setForm(createInitialForm(product));
+    setEditingBrandId(null);
+    setSectionBeingRenamed(null);
   }, [product, open]);
 
 
@@ -179,7 +188,7 @@ function ProductEditorModal({
       'Operating System',
       'Additional Details'
     ];
-    
+
     const catalogSections = products.flatMap(p => {
       const specs = p.specification_records || p.specifications || [];
       if (Array.isArray(specs)) {
@@ -239,11 +248,11 @@ function ProductEditorModal({
     if (points.length > 1) {
       event.preventDefault();
       const newText = points.join('\n');
-      
+
       setForm(prev => {
         const currentVal = prev[name] || '';
-        const currentPrefix = currentVal && !currentVal.endsWith('\n') 
-          ? currentVal + '\n' 
+        const currentPrefix = currentVal && !currentVal.endsWith('\n')
+          ? currentVal + '\n'
           : currentVal;
         return {
           ...prev,
@@ -324,11 +333,82 @@ function ProductEditorModal({
       setForm(current => ({ ...current, brand: newBrand.id }));
       setNewBrandName('');
       setShowNewBrandInput(false);
+      showToast({ title: 'Brand Created', message: `Brand "${trimmed}" was successfully added.`, type: 'success' });
     } catch {
       showToast({ title: 'Error', message: 'Failed to create brand', type: 'error' });
     } finally {
       setCreatingBrand(false);
     }
+  };
+
+  const handleUpdateBrand = async () => {
+    const trimmed = editBrandName.trim();
+    if (!trimmed || !editingBrandId) return;
+    setCreatingBrand(true);
+    try {
+      const updated = await updateBrand(editingBrandId, { name: trimmed });
+      setBrands && setBrands(prev => prev.map(b => b.id === editingBrandId ? updated : b));
+      setEditingBrandId(null);
+      setEditBrandName('');
+      showToast({ title: 'Brand Updated', message: 'Brand name was changed successfully.', type: 'success' });
+    } catch {
+      showToast({ title: 'Error', message: 'Failed to update brand', type: 'error' });
+    } finally {
+      setCreatingBrand(false);
+    }
+  };
+
+  const handleDeleteBrand = async (id) => {
+    const brandToDelete = brands.find(b => b.id === id);
+    if (!brandToDelete) return;
+
+    if (!window.confirm(`Are you sure you want to permanently delete the brand "${brandToDelete.name}"? This will affect all products associated with it.`)) {
+      return;
+    }
+
+    setCreatingBrand(true);
+    try {
+      await deleteBrand(id);
+      setBrands && setBrands(prev => prev.filter(b => b.id !== id));
+      if (String(form.brand) === String(id)) {
+        setForm(prev => ({ ...prev, brand: '' }));
+      }
+      showToast({ title: 'Brand Deleted', message: 'Brand was removed from the catalog.', type: 'success' });
+    } catch {
+      showToast({ title: 'Error', message: 'Failed to delete brand. It may be in use by other products.', type: 'error' });
+    } finally {
+      setCreatingBrand(false);
+    }
+  };
+
+  const handleRenameSection = (oldName) => {
+    const trimmed = renameSectionValue.trim();
+    if (!trimmed || trimmed === oldName) {
+      setSectionBeingRenamed(null);
+      return;
+    }
+
+    setForm(current => ({
+      ...current,
+      specifications: current.specifications.map(s =>
+        (s.section || 'General') === oldName ? { ...s, section: trimmed } : s
+      )
+    }));
+    setSectionBeingRenamed(null);
+    setRenameSectionValue('');
+    showToast({ title: 'Section Renamed', message: `All items in "${oldName}" moved to "${trimmed}".`, type: 'success' });
+  };
+
+  const handleRemoveSection = (sectionName) => {
+    if (!window.confirm(`Are you sure you want to remove the entire "${sectionName}" section and all its ${groupedSpecs[sectionName]?.length || 0} specifications?`)) {
+      return;
+    }
+
+    setForm(current => ({
+      ...current,
+      specifications: current.specifications.filter(s => (s.section || 'General') !== sectionName)
+    }));
+    showToast({ title: 'Section Removed', message: `The "${sectionName}" section was deleted.`, type: 'success' });
   };
 
 
@@ -356,7 +436,7 @@ function ProductEditorModal({
         value: s.value.trim(),
         section: s.section.trim() || 'General'
       })).filter(s => s.key && s.value),
-      highlights: typeof form.highlights === 'string' 
+      highlights: typeof form.highlights === 'string'
         ? form.highlights.split('\n').map(h => h.trim()).filter(h => h !== '')
         : [],
       files: form.files,
@@ -433,6 +513,18 @@ function ProductEditorModal({
       }
     >
       <form id="admin-product-form" onSubmit={handleSubmit} className="space-y-8 pb-12">
+        {/* Error Display */}
+        {error && (
+          <div className="rounded-[20px] bg-rose-50 border border-rose-200 p-5 mb-8 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+              <X size={20} strokeWidth={3} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-rose-500">Submission Error</p>
+              <p className="text-sm font-bold text-rose-900 mt-0.5">{error}</p>
+            </div>
+          </div>
+        )}
         {/* Catalog Metadata */}
         <section className="space-y-4">
           <div className="border-b border-slate-100 pb-2">
@@ -441,7 +533,7 @@ function ProductEditorModal({
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Product name</span>
+              <span className="text-sm font-semibold text-slate-700">Product name <span className="text-rose-500">*</span></span>
               <input
                 name="name"
                 value={form.name}
@@ -452,54 +544,117 @@ function ProductEditorModal({
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Brand</span>
-              <div className="flex gap-2 relative">
-                {!showNewBrandInput ? (
-                  <select
-                    name="brand"
-                    value={form.brand}
-                    onChange={handleChange}
-                    className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
-                    required
-                  >
-                    <option value="">Select brand</option>
-                    {brands.map((b) => (
-                      <option key={b.id || b.name} value={b.id || b.name}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="flex-1 flex gap-2">
-                    <input
-                      value={newBrandName}
-                      onChange={(e) => setNewBrandName(e.target.value)}
-                      className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
-                      placeholder="Brand name..."
-                      disabled={creatingBrand}
-                      autoFocus
-                    />
+              <span className="text-sm font-semibold text-slate-700">Brand <span className="text-rose-500">*</span></span>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 relative">
+                  {!showNewBrandInput && !editingBrandId ? (
+                    <>
+                      <select
+                        name="brand"
+                        value={form.brand}
+                        onChange={handleChange}
+                        className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
+                        required
+                      >
+                        <option value="">Select brand</option>
+                        {brands.map((b) => (
+                          <option key={b.id || b.name} value={b.id || b.name}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                      {form.brand && (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const b = brands.find(brand => String(brand.id) === String(form.brand));
+                              if (b) {
+                                setEditingBrandId(b.id);
+                                setEditBrandName(b.name);
+                              }
+                            }}
+                            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-colors hover:border-primary hover:text-primary"
+                            title="Edit Brand"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBrand(Number(form.brand))}
+                            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-colors hover:border-rose-200 hover:text-rose-600"
+                            title="Delete Brand"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : showNewBrandInput ? (
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        value={newBrandName}
+                        onChange={(e) => setNewBrandName(e.target.value)}
+                        className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
+                        placeholder="Brand name..."
+                        disabled={creatingBrand}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCustomBrand}
+                        className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-textMain"
+                        disabled={creatingBrand}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        value={editBrandName}
+                        onChange={(e) => setEditBrandName(e.target.value)}
+                        className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
+                        placeholder="New brand name..."
+                        disabled={creatingBrand}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleUpdateBrand}
+                        className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-textMain"
+                        disabled={creatingBrand}
+                      >
+                        <Check size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingBrandId(null);
+                          setEditBrandName('');
+                        }}
+                        className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-400"
+                        disabled={creatingBrand}
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  )}
+
+                  {!editingBrandId && (
                     <button
                       type="button"
-                      onClick={handleAddCustomBrand}
-                      className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-textMain"
-                      disabled={creatingBrand}
+                      onClick={() => setShowNewBrandInput(!showNewBrandInput)}
+                      className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold whitespace-nowrap outline-none transition-colors hover:bg-slate-50"
                     >
-                      Add
+                      {showNewBrandInput ? 'Cancel' : 'New Brand'}
                     </button>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setShowNewBrandInput(!showNewBrandInput)}
-                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold whitespace-nowrap outline-none transition-colors hover:bg-slate-50"
-                >
-                  {showNewBrandInput ? 'Cancel' : 'New Brand'}
-                </button>
+                  )}
+                </div>
               </div>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Category</span>
+              <span className="text-sm font-semibold text-slate-700">Category <span className="text-rose-500">*</span></span>
               <select
                 name="category"
                 value={form.category}
@@ -516,7 +671,7 @@ function ProductEditorModal({
               </select>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Subcategory</span>
+              <span className="text-sm font-semibold text-slate-700">Subcategory <span className="text-rose-500">*</span></span>
               <select
                 name="subcategory"
                 value={form.subcategory}
@@ -536,7 +691,7 @@ function ProductEditorModal({
               </select>
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">Description</span>
+              <span className="text-sm font-semibold text-slate-700">Description <span className="text-rose-500">*</span></span>
               <textarea
                 name="description"
                 value={form.description}
@@ -626,7 +781,7 @@ function ProductEditorModal({
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Stock</span>
+              <span className="text-sm font-semibold text-slate-700">Stock <span className="text-rose-500">*</span></span>
               <input
                 name="stock"
                 type="number"
@@ -641,19 +796,67 @@ function ProductEditorModal({
 
           <div className="space-y-6">
             {Object.entries(groupedSpecs).map(([sectionName, specs]) => (
-              <div key={sectionName} className="rounded-[24px] border border-slate-100 bg-slate-50/50 overflow-hidden">
+              <div key={sectionName} className="group rounded-[24px] border border-slate-100 bg-slate-50/50 overflow-hidden">
                 <div className="bg-slate-100/50 px-5 py-3 flex items-center justify-between border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">{sectionName}</h4>
+                  <div className="flex-1 flex items-center gap-3">
+                    {sectionBeingRenamed === sectionName ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={renameSectionValue}
+                          onChange={(e) => setRenameSectionValue(e.target.value)}
+                          className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold outline-none focus:border-primary"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRenameSection(sectionName)}
+                          className="text-primary hover:text-textMain"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSectionBeingRenamed(null)}
+                          className="text-slate-400 hover:text-rose-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">{sectionName}</h4>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSectionBeingRenamed(sectionName);
+                              setRenameSectionValue(sectionName);
+                            }}
+                            className="p-1 text-slate-400 hover:text-primary"
+                            title="Rename Section"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSection(sectionName)}
+                            className="p-1 text-slate-400 hover:text-rose-600"
+                            title="Remove Section"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleAddSpecification(sectionName)}
-                      className="text-[10px] font-bold text-primary hover:underline"
+                      className="text-[10px] font-bold text-primary hover:underline ml-auto"
                     >
                       + Add Row to {sectionName}
                     </button>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-400">{specs.length} items</span>
+                  <span className="text-[10px] font-bold text-slate-400 ml-4">{specs.length} items</span>
                 </div>
                 <div className="p-4 space-y-3">
                   {specs.map((spec) => {
@@ -782,11 +985,11 @@ Premium build quality
           <div className="flex flex-wrap gap-4">
             {resolvedProductFlags.map((flag) => (
               <label key={flag.key} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50">
-                <input 
-                  type="checkbox" 
-                  checked={Boolean(form[flag.key])} 
-                  onChange={() => handleFlagChange(flag.key)} 
-                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary" 
+                <input
+                  type="checkbox"
+                  checked={Boolean(form[flag.key])}
+                  onChange={() => handleFlagChange(flag.key)}
+                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                 />
                 <span className="text-sm font-bold text-slate-700">{flag.label}</span>
               </label>

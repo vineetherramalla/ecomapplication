@@ -10,6 +10,7 @@ import { getBrandName, getCategoryName, getSubcategoryName } from '../../api/api
 import { DEFAULT_FILTERS } from '../../utils/constants';
 import { slugify } from '../../utils/helpers';
 import { normalizeSpecificationKey } from '../../utils/specifications';
+import searchApi from '@/api/searchApi';
 
 const PRODUCTS_PER_PAGE = 12;
 const DETAIL_ALIAS_PATTERN = /^\d+$/;
@@ -53,6 +54,47 @@ const getSpecificationValue = (product, keys = []) => {
 
 const matchesSelectedValues = (selectedValues = [], entryValue = '') =>
   !selectedValues.length || (entryValue && selectedValues.includes(entryValue));
+
+const normalizeFacetOptions = (source) => {
+  if (!source) {
+    return [];
+  }
+
+  if (Array.isArray(source)) {
+    return source
+      .map((item) => {
+        if (typeof item === 'string' || typeof item === 'number') {
+          return { value: String(item), label: String(item), count: 0 };
+        }
+
+        const value = item.value ?? item.id ?? item.key ?? item.name ?? item.label;
+        const label = item.label ?? item.name ?? item.key ?? item.value ?? value;
+        return value ? { value: String(value), label: String(label), count: Number(item.count ?? item.doc_count ?? 0) } : null;
+      })
+      .filter(Boolean);
+  }
+
+  if (typeof source === 'object') {
+    return Object.entries(source).map(([value, count]) => ({
+      value: String(value),
+      label: String(value),
+      count: Number(count?.count ?? count?.doc_count ?? count ?? 0),
+    }));
+  }
+
+  return [];
+};
+
+const getFacetSource = (facets = {}, section) => {
+  const source = facets.facets || facets;
+  return (
+    source?.[section.key] ??
+    source?.[section.optionKey] ??
+    source?.[section.label] ??
+    source?.[section.label?.toLowerCase?.()] ??
+    null
+  );
+};
 
 function ProductsPage({ predefinedCategory }) {
   const { category: urlCategory, subcategory: urlSubcategory } = useParams();
@@ -130,6 +172,9 @@ function ProductsPage({ predefinedCategory }) {
   const debouncedSearch = useDeferredValue(searchTerm);
   const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [serverSearchProducts, setServerSearchProducts] = useState(null);
+  const [serverFacets, setServerFacets] = useState({});
+  const [serverSearchLoading, setServerSearchLoading] = useState(false);
 
   useEffect(() => {
     setFilters((current) => ({
@@ -148,9 +193,51 @@ function ProductsPage({ predefinedCategory }) {
     setCurrentPage(1);
   }, [filters, debouncedSearch, sortBy]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const query = debouncedSearch.trim();
+
+    if (query.length < 2) {
+      setServerSearchProducts(null);
+      setServerFacets({});
+      setServerSearchLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setServerSearchLoading(true);
+
+    Promise.all([
+      searchApi.searchProducts({ q: query, search: query }, { categories, subcategories, brands }),
+      searchApi.getSearchFacets({ q: query, search: query }),
+    ])
+      .then(([searchProducts, facets]) => {
+        if (!isMounted) return;
+        setServerSearchProducts(Array.isArray(searchProducts) ? searchProducts : []);
+        setServerFacets(facets || {});
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setServerSearchProducts(null);
+        setServerFacets({});
+      })
+      .finally(() => {
+        if (isMounted) {
+          setServerSearchLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [brands, categories, debouncedSearch, subcategories]);
+
+  const activeProducts = Array.isArray(serverSearchProducts) ? serverSearchProducts : products;
+
   const catalogEntries = useMemo(
     () =>
-      products.map((product) => {
+      activeProducts.map((product) => {
         const categoryLabel = getCategoryName(product.category, categories) || 'Uncategorized';
         const subcategoryLabel = getSubcategoryName(product.subcategoryData ?? product.subcategory, subcategories) || '';
         const categoryId = String(product.categoryId ?? product.category?.id ?? product.category ?? '');
@@ -201,7 +288,7 @@ function ProductsPage({ predefinedCategory }) {
           searchText: `${name} ${mpn} ${sku} ${specificationsText} ${recordsText}`.toLowerCase(),
         };
       }),
-    [products, categories, subcategories, brands],
+    [activeProducts, categories, subcategories, brands],
   );
 
   const selectedCategoryIds = filters.categories;
@@ -343,12 +430,18 @@ function ProductsPage({ predefinedCategory }) {
           });
         });
 
+        normalizeFacetOptions(getFacetSource(serverFacets, section)).forEach((facetOption) => {
+          if (!counts.has(String(facetOption.value))) {
+            counts.set(String(facetOption.value), facetOption);
+          }
+        });
+
         return {
           ...section,
           options: Array.from(counts.values()).sort((first, second) => first.label.localeCompare(second.label)),
         };
       }),
-    [catalogEntries, filters, debouncedSearch, categoryNameById, subcategoryNameById],
+    [catalogEntries, filters, debouncedSearch, categoryNameById, subcategoryNameById, serverFacets],
   );
 
   const filteredEntries = useMemo(() => {
@@ -666,11 +759,11 @@ function ProductsPage({ predefinedCategory }) {
           </div>
 
           <div className="min-h-[420px]">
-            {loading ? (
+            {loading || serverSearchLoading ? (
               <div className="flex flex-col items-center justify-center gap-4 py-20 opacity-60">
                 <div className="h-10 w-10 animate-spin rounded-full border-2 border-greyBorder border-t-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-textSecondary">
-                  Refreshing Catalog
+                  {serverSearchLoading ? 'Searching Catalog' : 'Refreshing Catalog'}
                 </span>
               </div>
             ) : error ? (

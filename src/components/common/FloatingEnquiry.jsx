@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { MessageCircle, X, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import { useProducts } from '@/features/catalog/hooks/useProducts';
-import enquiryService from '@/features/enquiry/services/enquiryService';
+import enquiryService from '@/api/enquiryApi';
 import { showToast } from '../../utils/helpers';
 import { getApiErrorMessage } from '../../api/apiUtils';
 
@@ -23,6 +23,7 @@ function FloatingEnquiry() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
 
   const { products = [] } = useProducts() ?? {};
   const params = useParams();
@@ -96,6 +97,7 @@ function FloatingEnquiry() {
       }, 2000);
     } catch (error) {
       const message = getApiErrorMessage(error, 'Failed to submit enquiry');
+      setSubmitError(message);
       showToast({ title: 'Error', message, variant: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -107,6 +109,7 @@ function FloatingEnquiry() {
     setIsSuccess(false);
     setFormData(initialFormState);
     setFieldErrors({});
+    setSubmitError(null);
   };
 
   return (
@@ -155,9 +158,17 @@ function FloatingEnquiry() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
+                  {submitError && (
+                    <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 flex items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                        <X size={16} strokeWidth={3} />
+                      </div>
+                      <p className="text-[11px] font-bold text-rose-800 uppercase leading-snug">{submitError}</p>
+                    </div>
+                  )}
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Full Name</label>
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Full Name <span className="text-rose-500">*</span></label>
                       <input
                         type="text"
                         name="name"
@@ -169,7 +180,7 @@ function FloatingEnquiry() {
                       {fieldErrors.name && <p className="text-[10px] font-bold text-rose-500 uppercase">{fieldErrors.name}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Company Name</label>
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Company Name <span className="text-rose-500">*</span></label>
                       <input
                         type="text"
                         name="company_name"
@@ -196,7 +207,7 @@ function FloatingEnquiry() {
 
                   <div className="grid gap-5 sm:grid-cols-[2fr_1fr]">
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Interested Product</label>
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Interested Product <span className="text-rose-500">*</span></label>
                       <input
                         type="text"
                         name="product"
@@ -208,7 +219,7 @@ function FloatingEnquiry() {
                       {fieldErrors.product && <p className="text-[10px] font-bold text-rose-500 uppercase">{fieldErrors.product}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Quantity</label>
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Quantity <span className="text-rose-500">*</span></label>
                       <input
                         type="number"
                         name="quantity"
@@ -222,7 +233,7 @@ function FloatingEnquiry() {
 
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Phone Number</label>
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Phone Number <span className="text-rose-500">*</span></label>
                       <input
                         type="tel"
                         name="phone"
@@ -234,7 +245,7 @@ function FloatingEnquiry() {
                       {fieldErrors.phone && <p className="text-[10px] font-bold text-rose-500 uppercase">{fieldErrors.phone}</p>}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Email Address</label>
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-500">Email Address <span className="text-rose-500">*</span></label>
                       <input
                         type="email"
                         name="email"

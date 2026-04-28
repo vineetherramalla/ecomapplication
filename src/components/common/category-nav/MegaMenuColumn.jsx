@@ -11,10 +11,10 @@ function NestedMenuItems({ items, onNavigate, level = 0 }) {
             className={({ isActive }) => `block transition-colors ${
               level === 0
                 ? `text-[14px] font-medium ${
-                    isActive ? 'text-primary' : 'text-textSecondary hover:text-textMain'
+                    isActive ? 'text-primary' : 'text-textMain hover:text-primary'
                   }`
-                : `text-[13px] font-normal ${
-                    isActive ? 'text-primary' : 'text-greyMedium hover:text-textMain'
+                : `text-[12px] font-normal ${
+                    isActive ? 'text-primary' : 'text-textMain hover:text-primary'
                   }`
             }`}
             onClick={onNavigate}
@@ -57,8 +57,8 @@ function MegaMenuColumn({ section, onNavigate }) {
           <NavLink
             to={section.path}
             end
-            className={({ isActive }) => `block text-[13px] font-medium transition-colors ${
-              isActive ? 'text-primary' : 'text-textSecondary hover:text-textMain'
+            className={({ isActive }) => `block text-[12px] font-medium transition-colors ${
+              isActive ? 'text-primary' : 'text-textMain hover:text-primary'
             }`}
             onClick={onNavigate}
           >

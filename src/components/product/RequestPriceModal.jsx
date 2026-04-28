@@ -1,7 +1,8 @@
 import { useEffect, useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CheckCircle2, MessageSquare, X } from 'lucide-react';
 import Modal from '../common/Modal';
-import rfqService from '@/features/rfq/services/rfqService';
+import rfqService from '@/api/rfqApi';
 import authService from '@/features/auth/services/authService';
 import rfqIntentService from '@/features/rfq/services/rfqIntentService';
 import { getApiErrorMessage, getBrandName, resolveAssetUrl } from '../../api/apiUtils';
@@ -23,9 +24,13 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!isOpen) {
+      setIsSuccess(false);
+      setError(null);
       return;
     }
 
@@ -118,9 +123,11 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
         }
       }
     } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Unable to submit request. Please try your dashboard or contact support.');
+      setError(errorMessage);
       showToast({
         title: 'Inquiry failed',
-        message: getApiErrorMessage(error, 'Unable to submit request. Please try your dashboard or contact support.'),
+        message: errorMessage,
         type: 'error',
       });
     } finally {
@@ -129,6 +136,7 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
   };
 
   const handleSuccess = () => {
+    setIsSuccess(true);
     setFormData({
       name: '',
       contactNumber: '',
@@ -136,16 +144,32 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
       quantity: quantity || 1,
       message: '',
     });
-    onClose();
+    
+    // Close modal after showing success state for a while
+    setTimeout(() => {
+      onClose();
+    }, 3000);
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      title="Request RFQ Quote"
+      title={isSuccess ? "Submission Successful" : "Request RFQ Quote"}
       onClose={onClose}
     >
-      <div className="mb-8 rounded-2xl border border-greyBorder bg-slate-50/50 p-5">
+      {isSuccess ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="mb-6 rounded-full bg-green-50 p-4 text-green-500">
+            <CheckCircle2 size={64} />
+          </div>
+          <h3 className="text-xl font-bold text-textMain">Request Received</h3>
+          <p className="mt-2 text-slate-500 max-w-sm">
+            Thank you for your interest in {product?.name}. Our representative will contact you with a formal quote within 24 hours.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="mb-8 rounded-2xl border border-greyBorder bg-slate-50/50 p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           {product?.images?.[0] && (
             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-greyBorder bg-white p-2">
@@ -174,11 +198,20 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-2xl bg-rose-50 border border-rose-100 p-4 mb-6 flex items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <X size={16} strokeWidth={3} />
+          </div>
+          <p className="text-sm font-semibold text-rose-800">{error}</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400" htmlFor="name">
-              Full Name *
+              Full Name <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -193,7 +226,7 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
           </div>
           <div className="space-y-2">
             <label className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400" htmlFor="contactNumber">
-              Contact Number *
+              Contact Number <span className="text-rose-500">*</span>
             </label>
             <input
               type="tel"
@@ -211,7 +244,7 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400" htmlFor="email">
-              Email Address *
+              Email Address <span className="text-rose-500">*</span>
             </label>
             <input
               type="email"
@@ -226,7 +259,7 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
           </div>
           <div className="space-y-2">
             <label className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400" htmlFor="quantity">
-              Order Quantity *
+              Order Quantity <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"
@@ -273,7 +306,9 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
           </button>
         </div>
       </form>
-    </Modal>
+    </>
+    )}
+  </Modal>
   );
 }
 

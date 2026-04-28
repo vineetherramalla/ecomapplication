@@ -6,7 +6,7 @@ import {
   updateSubcategory as putSubcategory,
 } from '@/api/subcategoryApi';
 import { runCatalogMutation, runServiceAction } from '@/features/catalog/services/serviceHelpers';
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 const SUBCATEGORY_CACHE_TTL_MS = 5 * 60 * 1000;
 const subcategoryCache = new Map();

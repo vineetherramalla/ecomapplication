@@ -1,5 +1,5 @@
 import { touchCatalogSync } from '@/store/catalog/catalogSyncStore';
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 export const runServiceAction = async (action, errorMessage) => {
   try {

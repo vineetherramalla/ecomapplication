@@ -74,7 +74,11 @@ export const extractApiFieldErrors = (payload) => {
 
 export const extractApiErrorMessage = (payload, fallbackMessage = 'Request failed') => {
   if (typeof payload === 'string' && payload.trim()) {
-    return payload.trim();
+    const trimmed = payload.trim();
+    if (trimmed.toLowerCase().startsWith('<!doctype html') || trimmed.startsWith('<html')) {
+      return fallbackMessage;
+    }
+    return trimmed;
   }
 
   if (!payload) {

@@ -28,7 +28,9 @@ function FilterSection({ title, isOpen, onToggle, activeCount = 0, children }) {
   );
 }
 
-function FilterOption({ option, isChecked, onToggle }) {
+function FilterOption({ option, isChecked, onToggle, sectionKey }) {
+  const isSubcategory = sectionKey === 'subcategories';
+  
   return (
     <label className="flex min-h-[44px] cursor-pointer items-center justify-between gap-4 rounded-xl px-2 py-2 transition-colors hover:bg-greyLight/50">
       <div className="flex items-center gap-3">
@@ -47,7 +49,11 @@ function FilterOption({ option, isChecked, onToggle }) {
           onChange={onToggle}
           className="sr-only"
         />
-        <span className={`text-sm ${isChecked ? 'font-bold text-textMain' : 'font-medium text-textSecondary'}`}>
+        <span className={`text-sm ${
+          isSubcategory 
+            ? `text-black ${isChecked ? 'font-bold' : 'font-medium'}` 
+            : `${isChecked ? 'font-bold text-textMain' : 'font-medium text-textSecondary'}`
+        }`}>
           {option.label}
         </span>
       </div>
@@ -132,6 +138,7 @@ function FilterSidebar({ sections = [], filters, totalResults = 0, onToggleOptio
                         option={option}
                         isChecked={isChecked}
                         onToggle={() => onToggleOption(section.key, option.value)}
+                        sectionKey={section.key}
                       />
                     );
                   })}

@@ -285,7 +285,7 @@ function CategoryNav() {
           <NavLink
             to={item.path}
             className={({ isActive }) => `block rounded-sm px-3 py-2 transition-colors ${level === 0
-              ? `text-[12px] font-medium ${isActive
+              ? `text-[14px] font-medium ${isActive
                 ? 'bg-primary/10 text-primary'
                 : 'text-textSecondary hover:bg-greyLight hover:text-textMain'
               }`
@@ -315,12 +315,11 @@ function CategoryNav() {
         onMouseLeave={scheduleDesktopClose}
       >
         <div ref={navShellRef} className="container-shell flex min-h-[44px] lg:min-h-[52px] items-stretch">
-          <div className="flex min-h-[44px] lg:min-h-[52px] w-full items-stretch text-[11px] font-black uppercase tracking-wider text-textMain sm:text-[12px]">
+          <div className="flex min-h-[44px] lg:min-h-[52px] w-full items-stretch text-[13px] font-black uppercase tracking-wider text-textMain sm:text-[14px]">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className={`flex h-[44px] lg:h-[52px] items-center justify-between gap-3 px-4 transition-all outline-none sm:w-[132px] sm:justify-start sm:border-r sm:border-black/5 sm:px-6 ${
-                isSidebarOpen ? 'bg-black/10' : 'hover:bg-black/10'
-              }`}
+              className={`flex h-[44px] lg:h-[52px] items-center justify-between gap-3 px-4 transition-all outline-none sm:w-[132px] sm:justify-start sm:border-r sm:border-black/5 sm:px-6 ${isSidebarOpen ? 'bg-black/10' : 'hover:bg-black/10'
+                }`}
             >
               <Menu size={18} />
               <span>Menu</span>
@@ -365,9 +364,8 @@ function CategoryNav() {
           ) : null}
 
           <div
-            className={`fixed top-0 left-0 z-[9999] flex h-full w-[280px] sm:w-[320px] transform flex-col bg-white text-[10px] font-bold uppercase tracking-widest shadow-2xl transition-transform duration-500 ${
-              isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
+            className={`fixed top-0 left-0 z-[9999] flex h-full w-[280px] sm:w-[320px] transform flex-col bg-white text-[12px] font-bold uppercase tracking-widest shadow-2xl transition-transform duration-500 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+              }`}
           >
             <div className="flex items-center justify-between p-6 bg-primary text-textMain h-24 shrink-0 shadow-lg">
               <div className="flex flex-col">
@@ -434,7 +432,7 @@ function CategoryNav() {
                                         <div className="space-y-3">
                                           <NavLink
                                             to={section.path}
-                                            className={({ isActive }) => `block rounded-sm px-3 py-2 text-[12px] font-black uppercase tracking-[0.08em] transition-colors ${isActive
+                                            className={({ isActive }) => `block rounded-sm px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${isActive
                                               ? 'bg-primary/15 text-primary'
                                               : 'text-textSecondary hover:bg-greyLight hover:text-textMain'
                                               }`}

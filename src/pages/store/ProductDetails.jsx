@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, ChevronRight, MessageSquare, Package } from 'lucide-react';
+import { ArrowRight, ChevronRight, Heart, MessageSquare, Package, Star } from 'lucide-react';
 import ProductGallery from '../../components/product/ProductGallery';
 import SpecificationsTable from '../../components/product/SpecificationsTable';
 import { useProducts } from '@/features/catalog/hooks/useProducts';
@@ -8,8 +8,10 @@ import RequestPriceModal from '../../components/product/RequestPriceModal';
 import placeholder from '../../assets/placeholder.jpg';
 import { getApiErrorMessage, getBrandName, getCategoryName, resolveAssetUrl } from '../../api/apiUtils';
 import authService from '@/features/auth/services/authService';
-import productService from '@/features/catalog/services/productService';
+import productService from '@/api/productApi';
 import rfqIntentService from '@/features/rfq/services/rfqIntentService';
+import ProductReviews from '@/features/reviews/components/ProductReviews';
+import { useWishlist } from '@/features/wishlist/hooks/useWishlist';
 import { showToast, slugify, formatCurrency } from '../../utils/helpers';
 
 const hasRenderableProductData = (candidate) =>
@@ -28,15 +30,25 @@ function ProductDetails({ productIdOverride = null }) {
   const id = productIdOverride ?? params.id;
   const navigate = useNavigate();
   const location = useLocation();
-  const { products = [], categories = [], subcategories = [], brands = [] } = useProducts() ?? {};
+  const {
+    products = [],
+    categories = [],
+    subcategories = [],
+    brands = [],
+    loading: productsLoading = false,
+    error: productsError = '',
+  } = useProducts() ?? {};
 
   const [quantity, setQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [product, setProduct] = useState(null);
   const [productLoading, setProductLoading] = useState(true);
   const [productError, setProductError] = useState('');
+  const [activeTab, setActiveTab] = useState('specifications');
+  const [similarProducts, setSimilarProducts] = useState([]);
 
   const isAuthenticated = authService.isAuthenticated();
+  const wishlist = useWishlist();
   const cachedProduct = useMemo(
     () => products.find((item) => String(item.id) === String(id)) || null,
     [products, id],
@@ -51,10 +63,13 @@ function ProductDetails({ productIdOverride = null }) {
         setProductError('');
       }
 
+      if (productsLoading && !cachedProduct) {
+        setProductLoading(true);
+        return;
+      }
+
       if (hasRenderableProductData(cachedProduct)) {
-        if (isMounted) {
-          setProductLoading(false);
-        }
+        setProductLoading(false);
         return;
       }
 
@@ -67,13 +82,16 @@ function ProductDetails({ productIdOverride = null }) {
           subcategories,
           brands,
         });
+
         if (isMounted) {
           setProduct(productData);
         }
       } catch (error) {
         if (isMounted) {
           setProduct(null);
-          setProductError(getApiErrorMessage(error, 'Failed to load product details'));
+          setProductError(
+            productsError || getApiErrorMessage(error, 'Failed to load product details'),
+          );
         }
       } finally {
         if (isMounted) {
@@ -87,7 +105,34 @@ function ProductDetails({ productIdOverride = null }) {
     return () => {
       isMounted = false;
     };
-  }, [id, categories, subcategories, brands, cachedProduct]);
+  }, [brands, cachedProduct, categories, id, productsError, productsLoading, subcategories]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSimilarProducts = async () => {
+      if (!product?.id) {
+        setSimilarProducts([]);
+        return;
+      }
+
+      const apiSimilarProducts = await productService.getSimilarProducts(product.id, {
+        categories,
+        subcategories,
+        brands,
+      });
+
+      if (isMounted) {
+        setSimilarProducts(apiSimilarProducts);
+      }
+    };
+
+    loadSimilarProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [brands, categories, product?.id, subcategories]);
 
   useEffect(() => {
     if (!product) return;
@@ -119,6 +164,29 @@ function ProductDetails({ productIdOverride = null }) {
       });
       showToast({ title: 'Authentication Required', message: 'Please sign in to request pricing.' });
       navigate('/login', { state: { from: location, openRFQ: true } });
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!product?.id || !wishlist) {
+      return;
+    }
+
+    try {
+      const wasWishlisted = wishlist.isWishlisted(product.id);
+      await wishlist.toggleWishlist(product.id);
+      showToast({
+        title: wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist',
+        message: wasWishlisted
+          ? `${product.name} was removed from your saved items.`
+          : `${product.name} was saved to your wishlist.`,
+      });
+    } catch (error) {
+      showToast({
+        title: 'Wishlist update failed',
+        message: getApiErrorMessage(error, 'Unable to update wishlist'),
+        type: 'error',
+      });
     }
   };
 
@@ -158,8 +226,10 @@ function ProductDetails({ productIdOverride = null }) {
 
   const categoryName = getCategoryName(product.category, categories);
   const galleryImages = product.images || [];
+  const isWishlisted = wishlist?.isWishlisted(product.id) || false;
+  const displayRating = Number(product.rating || 0);
 
-  const relatedProducts = products
+  const relatedProducts = (similarProducts.length ? similarProducts : products)
     .filter((item) => String(item.id) !== String(product.id))
     .slice(0, 4);
 
@@ -168,7 +238,7 @@ function ProductDetails({ productIdOverride = null }) {
       {/* Breadcrumb - Redington Minimalist Style */}
       <div className="border-b border-slate-200 bg-white shadow-sm">
         <div className="container-shell">
-          <nav className="flex flex-wrap items-center gap-x-2 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <nav className="flex flex-wrap items-center gap-x-2 py-4 text-[12px] font-bold uppercase tracking-widest text-slate-400">
             <Link to="/" className="hover:text-primary transition-colors">Home</Link>
             <ChevronRight size={12} className="text-slate-300" />
             <Link to="/products" className="hover:text-primary transition-colors">Catalog</Link>
@@ -212,6 +282,22 @@ function ProductDetails({ productIdOverride = null }) {
                     {categoryName}
                   </span>
                 </div>
+                {displayRating > 0 ? (
+                  <div className="flex items-center gap-2 pt-2">
+                    <div className="flex items-center gap-0.5 text-primary">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={15}
+                          className={star <= Math.round(displayRating) ? 'fill-primary' : 'text-slate-300'}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-400">
+                      {displayRating.toFixed(1)} rated
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex flex-col space-y-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                   <div className="flex gap-2">
                     <span className="w-10">MPN:</span>
@@ -240,12 +326,12 @@ function ProductDetails({ productIdOverride = null }) {
               <div className="w-full border-t border-dashed border-slate-300 pt-8" />
               <div className="w-full space-y-4 pt-8">
                 <h3 className="text-[11px] font-black uppercase tracking-widest text-textMain">Product Highlights</h3>
-                <ul className="space-y-3">
+                <ul className="space-y-4">
                   {product.highlights && product.highlights.length > 0 ? (
                     product.highlights.map((highlight, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-slate-600">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                        <span className="text-xs font-medium leading-relaxed tracking-tight">{highlight.replace(/^(?:[•*-])\s*/, '').trim()}</span>
+                      <li key={idx} className="flex items-start gap-3 text-slate-600">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                        <span className="text-sm font-medium leading-relaxed tracking-tight">{highlight.replace(/^(?:[•*-])\s*/, '').trim()}</span>
                       </li>
                     ))
                   ) : (
@@ -294,6 +380,18 @@ function ProductDetails({ productIdOverride = null }) {
                     <MessageSquare size={18} className="text-primary" />
                     <span>Request RFQ Quote</span>
                   </button>
+                  <button
+                    type="button"
+                    onClick={handleWishlistToggle}
+                    className={`flex min-h-[56px] w-full items-center justify-center gap-4 rounded-2xl border px-8 py-4 text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] sm:flex-1 ${
+                      isWishlisted
+                        ? 'border-primary bg-primary text-textMain'
+                        : 'border-slate-200 bg-white text-textMain hover:border-primary'
+                    }`}
+                  >
+                    <Heart size={18} className={isWishlisted ? 'fill-textMain' : ''} />
+                    <span>{isWishlisted ? 'Saved' : 'Add to Wishlist'}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -328,14 +426,37 @@ function ProductDetails({ productIdOverride = null }) {
       <div className="container-shell mt-16 lg:mt-24">
         <div className="mb-12 border-b border-slate-200">
           <div className="flex gap-10">
-            <button className="pb-6 text-[11px] font-black uppercase tracking-[0.3em] text-textMain border-b-4 border-primary">
+            <button
+              type="button"
+              onClick={() => setActiveTab('specifications')}
+              className={`pb-6 text-[11px] font-black uppercase tracking-[0.3em] ${
+                activeTab === 'specifications'
+                  ? 'border-b-4 border-primary text-textMain'
+                  : 'text-slate-400 transition-colors hover:text-textMain'
+              }`}
+            >
               Specifications
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('reviews')}
+              className={`pb-6 text-[11px] font-black uppercase tracking-[0.3em] ${
+                activeTab === 'reviews'
+                  ? 'border-b-4 border-primary text-textMain'
+                  : 'text-slate-400 transition-colors hover:text-textMain'
+              }`}
+            >
+              Reviews
             </button>
           </div>
         </div>
 
         <div className="w-full">
-          <SpecificationsTable specifications={product.specifications} />
+          {activeTab === 'reviews' ? (
+            <ProductReviews productId={product.id} />
+          ) : (
+            <SpecificationsTable specifications={product.specifications} />
+          )}
         </div>
       </div>
 
@@ -345,7 +466,7 @@ function ProductDetails({ productIdOverride = null }) {
           <div className="mb-10 flex items-end justify-between">
             <div>
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-2 block">Curation</span>
-              <h2 className="text-3xl font-black uppercase tracking-tighter text-textMain">Recommended Solutions</h2>
+              <h2 className="text-3xl font-black uppercase tracking-tighter text-textMain">Similar Products</h2>
             </div>
             <Link to="/products" className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-textMain transition-colors">
               Full Portfolio <ArrowRight size={14} className="group-hover:translate-x-1" />

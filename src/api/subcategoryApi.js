@@ -4,6 +4,7 @@ import {
   normalizeSubcategory,
   unwrapResponse,
 } from './apiUtils';
+import { API_ENDPOINTS } from './endpoints';
 
 const withParentCategory = (data = {}, categoryId = null) => {
   const payload = { ...data };
@@ -29,26 +30,26 @@ export const getSubcategories = async (categoryId) => {
     return [];
   }
 
-  return normalizeSubcategories(await publicApi.get(`/categories/${categoryId}/subcategories/`), categoryId);
+  return normalizeSubcategories(await publicApi.get(API_ENDPOINTS.products.subcategories(categoryId)), categoryId);
 };
 
 export const getSubcategoryById = async (categoryId, id) =>
   normalizeSubcategory(
-    unwrapResponse(await publicApi.get(`/categories/${id}/`)),
+    unwrapResponse(await publicApi.get(API_ENDPOINTS.products.category(id))),
     categoryId,
   );
 
 export const createSubcategory = async (categoryId, data) =>
   normalizeSubcategory(
-    unwrapResponse(await api.post(`/categories/${categoryId}/subcategories/`, data)),
+    unwrapResponse(await api.post(API_ENDPOINTS.products.subcategories(categoryId), data)),
     categoryId,
   );
 
 export const updateSubcategory = async (categoryId, id, data) =>
   normalizeSubcategory(
-    unwrapResponse(await api.put(`/categories/${id}/`, withParentCategory(data, categoryId))),
+    unwrapResponse(await api.put(API_ENDPOINTS.products.category(id), withParentCategory(data, categoryId))),
     categoryId,
   );
 
 export const deleteSubcategory = async (categoryId, id) =>
-  unwrapResponse(await api.delete(`/categories/${id}/`));
+  unwrapResponse(await api.delete(API_ENDPOINTS.products.category(id)));

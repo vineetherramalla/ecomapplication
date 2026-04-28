@@ -39,6 +39,8 @@ const supportLinks = [
   { label: 'Partner Login', to: '/login' },
   { label: 'Create Account', to: '/register' },
   { label: 'Browse Catalog', to: '/products' },
+  { label: 'Terms & Conditions', to: '/terms-conditions' },
+  { label: 'Privacy Policy', to: '/privacy-policy' },
 ];
 
 const socialLinks = [
@@ -157,12 +159,22 @@ function Footer() {
 
           <div className="flex flex-col gap-3 border-t border-white/10 px-5 py-5 text-xs text-slate-400 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
             <p>© {new Date().getFullYear()} SRIA Distribution. All rights reserved.</p>
+
+            <p className="text-center lg:absolute lg:left-1/2 lg:-translate-x-1/2">
+              Powered by <span className="text-primary font-medium">SRIA Infotech Pvt Ltd</span>
+            </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link to="/products" className="transition-colors hover:text-primary">
                 Catalog
               </Link>
               <Link to="/contact" className="transition-colors hover:text-primary">
                 Contact
+              </Link>
+              <Link to="/terms-conditions" className="transition-colors hover:text-primary">
+                Terms & Conditions
+              </Link>
+              <Link to="/privacy-policy" className="transition-colors hover:text-primary">
+                Privacy Policy
               </Link>
               <a href="mailto:sales@sriainfotech.com" className="transition-colors hover:text-primary">
                 sales@sriainfotech.com

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getApiErrorMessage } from '../../../api/apiUtils';
-import rfqService from '@/features/rfq/services/rfqService';
+import rfqService from '@/api/rfqApi';
 import { showToast } from '../../../utils/helpers';
 import AdminDataTable from '../components/AdminDataTable';
 import AdminPageHeader from '../components/AdminPageHeader';

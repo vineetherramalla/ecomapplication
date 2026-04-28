@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getProducts } from '@/features/catalog/services/productService';
+import { getProducts } from '@/api/productApi';
 import { getApiErrorMessage, getBrandName, getCategoryName } from '../../../api/apiUtils';
 import { getCatalogData } from '@/features/catalog/services/catalogService';
 import inventoryService from '@/features/inventory/services/inventoryService';

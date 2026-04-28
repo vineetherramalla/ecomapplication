@@ -9,7 +9,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import authService from '@/features/auth/services/authService';
-import rfqService from '@/features/rfq/services/rfqService';
+import rfqService from '@/api/rfqApi';
 import { getApiErrorMessage } from '../../api/apiUtils';
 import { formatCurrency } from '../../utils/helpers';
 

@@ -1,14 +1,17 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Heart } from 'lucide-react';
 import placeholder from '../../assets/placeholder.jpg';
-import { formatCurrency } from '../../utils/helpers';
-import { resolveAssetUrl } from '../../api/apiUtils';
+import { formatCurrency, showToast } from '../../utils/helpers';
+import { getApiErrorMessage, resolveAssetUrl } from '../../api/apiUtils';
+import { useWishlist } from '@/features/wishlist/hooks/useWishlist';
 
 function ProductCard({ product, viewMode = 'grid' }) {
   const isListView = viewMode === 'list';
   const detailPath = `/products/${product.id}`;
   const mainImage = resolveAssetUrl(product.images?.[0] || product.image || placeholder);
+  const wishlist = useWishlist();
+  const isWishlisted = wishlist?.isWishlisted(product.id) || false;
 
   const handleImageError = (event) => {
     event.currentTarget.src = placeholder;
@@ -23,13 +26,54 @@ function ProductCard({ product, viewMode = 'grid' }) {
     </div>
   ) : null;
 
+  const handleWishlistToggle = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!wishlist) {
+      return;
+    }
+
+    try {
+      const wasWishlisted = wishlist.isWishlisted(product.id);
+      await wishlist.toggleWishlist(product.id);
+      showToast({
+        title: wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist',
+        message: wasWishlisted
+          ? `${product.name} was removed from your saved items.`
+          : `${product.name} was saved to your wishlist.`,
+      });
+    } catch (error) {
+      showToast({
+        title: 'Wishlist update failed',
+        message: getApiErrorMessage(error, 'Unable to update wishlist'),
+        type: 'error',
+      });
+    }
+  };
+
+  const wishlistButton = (
+    <button
+      type="button"
+      onClick={handleWishlistToggle}
+      className={`absolute right-2 top-2 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-sm transition-all sm:right-3 sm:top-3 ${
+        isWishlisted
+          ? 'border-primary bg-primary text-textMain'
+          : 'border-slate-200 bg-white/95 text-slate-500 hover:border-primary hover:text-textMain'
+      }`}
+      aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+      title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+    >
+      <Heart size={17} className={isWishlisted ? 'fill-textMain' : ''} />
+    </button>
+  );
+
   if (isListView) {
     return (
-      <Link 
-        to={detailPath}
-        className="group block overflow-hidden rounded-2xl border border-greyBorder bg-white shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-hover sm:rounded-3xl"
-      >
-        <div className="flex flex-col sm:flex-row">
+      <article className="group relative overflow-hidden rounded-2xl border border-greyBorder bg-white shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-hover sm:rounded-3xl">
+        {wishlistButton}
+        <Link to={detailPath} className="block">
+          <div className="flex flex-col sm:flex-row">
           <div
             className="relative flex h-40 w-full shrink-0 items-center justify-center border-b border-greyBorder bg-white p-3 transition-colors group-hover:bg-greyLight/35 sm:h-auto sm:w-56 sm:border-b-0 sm:border-r sm:p-5 lg:w-64 lg:p-6"
           >
@@ -87,16 +131,16 @@ function ProductCard({ product, viewMode = 'grid' }) {
               </div>
             </div>
           </div>
-        </div>
-      </Link>
+          </div>
+        </Link>
+      </article>
     );
   }
 
   return (
-    <Link 
-      to={detailPath}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-greyBorder bg-white shadow-soft transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-hover sm:rounded-3xl"
-    >
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-greyBorder bg-white shadow-soft transition-all duration-300 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-hover sm:rounded-3xl">
+      {wishlistButton}
+      <Link to={detailPath} className="flex h-full flex-col">
       <div
         className="relative flex aspect-square items-center justify-center border-b border-greyBorder bg-white p-3 transition-colors group-hover:bg-greyLight/35 sm:aspect-[4/3] sm:p-4 lg:p-6"
       >
@@ -154,7 +198,8 @@ function ProductCard({ product, viewMode = 'grid' }) {
           </div>
         </div>
       </div>
-    </Link>
+      </Link>
+    </article>
   );
 }
 

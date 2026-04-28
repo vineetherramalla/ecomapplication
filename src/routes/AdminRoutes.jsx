@@ -1,11 +1,12 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import authService from '@/features/auth/services/authService';
-import PageLoader from '@/shared/components/feedback/PageLoader';
+import PageLoader from '@/components/common/feedback/PageLoader';
 
 const AdminLayout = lazy(() => import('@/features/admin/layout/AdminLayout'));
 const AdminCategoriesPage = lazy(() => import('@/features/admin/pages/AdminCategoriesPage'));
 const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashboardPage'));
+const AdminAnalyticsPage = lazy(() => import('@/features/admin/pages/AdminAnalyticsPage'));
 const AdminInventoryPage = lazy(() => import('@/features/admin/pages/AdminInventoryPage'));
 const AdminLoginPage = lazy(() => import('@/features/admin/pages/AdminLoginPage'));
 const AdminProductsPage = lazy(() => import('@/features/admin/pages/AdminProductsPage'));
@@ -43,6 +44,7 @@ function AdminRoutes() {
         <Route path="/" element={<AdminEntry />} />
         <Route element={<AdminGuard />}>
           <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />
           <Route path="categories" element={<AdminCategoriesPage />} />

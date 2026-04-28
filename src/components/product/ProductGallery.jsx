@@ -36,7 +36,7 @@ function ProductGallery({ images = [], alt = 'Product image' }) {
           alt={alt}
           className="h-full w-full object-contain transition-transform duration-700 group-hover:scale-105"
           loading="eager"
-          fetchpriority="high"
+          fetchPriority="high"
           decoding="async"
           onError={(e) => { e.currentTarget.src = placeholder; }}
         />

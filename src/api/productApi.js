@@ -19,7 +19,8 @@ import {
   updateSpecification,
 } from './specificationApi';
 import { buildSpecificationSections } from '../utils/specifications';
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
+import { API_ENDPOINTS } from './endpoints';
 
 const shouldRetryLegacyMutation = (error) =>
   error?.response?.status === 400 || error?.response?.status === 404;
@@ -77,7 +78,7 @@ const groupImagesByProduct = (imageRecords = []) =>
 
     const key = String(productId);
     const rawKey = `${key}_raw`;
-    
+
     if (!accumulator[key]) {
       accumulator[key] = [];
       accumulator[rawKey] = [];
@@ -104,7 +105,7 @@ const mergeProductImages = (product, imageMap = {}) => {
   ];
 
   const rawImageObjects = imageMap[`${product.id}_raw`] || [];
-  
+
   return {
     ...product,
     images: mergedImages,
@@ -112,10 +113,10 @@ const mergeProductImages = (product, imageMap = {}) => {
     gallery: mergedImages.map((url, index) => {
       // Try to find the original record to preserve the ID
       const original = rawImageObjects.find(obj => {
-         const objUrl = resolveAssetUrl(obj.image || obj.url || obj.file);
-         return objUrl === url;
+        const objUrl = resolveAssetUrl(obj.image || obj.url || obj.file);
+        return objUrl === url;
       });
-      
+
       return {
         id: original?.id,
         url: url,
@@ -166,10 +167,10 @@ const groupSpecificationsByProduct = (specificationRecords = []) =>
 const mergeProductSpecifications = (product, specificationMap = {}) => {
   const pKey = String(product.id);
   const records = specificationMap[`${pKey}_records`] || [];
-  
+
   // If we already have specifications in grouped format, we might need to flatten them to re-group,
   // but usually for products from DB we want to use the joined records as source of truth for UI categories.
-  
+
   const sections = buildSpecificationSections(records);
   const groupedSpecs = sections.map(s => ({
     category: s.title,
@@ -246,7 +247,7 @@ const loadProductListBundle = async () => {
   }
 
   const request = Promise.all([
-    fetchAllPages(publicApi, '/products/'),
+    fetchAllPages(publicApi, API_ENDPOINTS.products.products),
     loadProductRelations(),
   ]).finally(() => {
     PRODUCT_LIST_REQUESTS.delete(requestKey);
@@ -259,12 +260,12 @@ const loadProductListBundle = async () => {
 const syncProductSpecifications = async (productId, specifications = []) => {
   const nextEntries = Array.isArray(specifications)
     ? specifications
-        .map((specification) => ({
-          key: String(specification?.key || '').trim(),
-          value: String(specification?.value || '').trim(),
-          section: String(specification?.section || 'General').trim() || 'General',
-        }))
-        .filter((specification) => specification.key && specification.value)
+      .map((specification) => ({
+        key: String(specification?.key || '').trim(),
+        value: String(specification?.value || '').trim(),
+        section: String(specification?.section || 'General').trim() || 'General',
+      }))
+      .filter((specification) => specification.key && specification.value)
     : Object.entries(specifications)
       .filter(([, v]) => v !== '' && v !== null && v !== undefined)
       .map(([k, v]) => ({ key: k, value: v, section: 'General' }));
@@ -364,7 +365,7 @@ const runProductMutation = async (method, url, modernPayload, legacyPayload) => 
 
 const updateBaseProduct = async (id, data, catalog) => {
   const { modernPayload, legacyPayload } = buildProductPayloads(data, catalog);
-  return runProductMutation('put', `/products/${id}/`, modernPayload, legacyPayload);
+  return runProductMutation('put', API_ENDPOINTS.products.product(id), modernPayload, legacyPayload);
 };
 
 const buildProductSideEffectTasks = (productId, data = {}) => {
@@ -426,7 +427,7 @@ export const getProducts = async (catalog) => {
 
 export const getProductSummaries = async (catalog) => {
   try {
-    const products = await fetchAllPages(publicApi, '/products/');
+    const products = await fetchAllPages(publicApi, API_ENDPOINTS.products.products);
     return normalizeProducts(products, catalog);
   } catch (error) {
     logger.error('Error fetching product summaries:', error);
@@ -437,7 +438,7 @@ export const getProductSummaries = async (catalog) => {
 export const getProductById = async (id, catalog) => {
   try {
     const [productResponse, relations] = await Promise.all([
-      publicApi.get(`/products/${id}/`),
+      publicApi.get(API_ENDPOINTS.products.product(id)),
       loadProductRelations(id),
     ]);
 
@@ -449,13 +450,23 @@ export const getProductById = async (id, catalog) => {
   }
 };
 
+export const getSimilarProducts = async (id, catalog) => {
+  try {
+    const products = await fetchAllPages(publicApi, API_ENDPOINTS.products.similar(id));
+    return normalizeProducts(products, catalog);
+  } catch (error) {
+    logger.warn(`Unable to fetch similar products for ${id}:`, error);
+    return [];
+  }
+};
+
 export const createProduct = async (data, catalog) => {
   try {
     validateProductMutationData(data);
     clearProductListRequests();
     const { modernPayload, legacyPayload } = buildProductPayloads(data, catalog);
 
-    const product = await runProductMutation('post', '/products/', modernPayload, legacyPayload);
+    const product = await runProductMutation('post', API_ENDPOINTS.products.products, modernPayload, legacyPayload);
     const productId = product.id ?? product.pk;
 
     // Run remaining side effects (Specs, Stock, Images)
@@ -488,10 +499,11 @@ export const updateProduct = async (id, data, catalog) => {
 export const deleteProduct = async (id) => {
   try {
     clearProductListRequests();
-    const result = await api.delete(`/products/${id}/`);
+    const url = API_ENDPOINTS.products.product(id);
+    const result = await api.delete(url);
     logger.info('Product API response', {
       method: 'DELETE',
-      url: `/products/${id}/`,
+      url,
       response: unwrapResponse(result),
     });
     touchCatalogSync();
@@ -510,10 +522,10 @@ export const getProductOptions = async () => {
     }
 
     // Use authenticated api instance to include Bearer token
-    const response = await api.options('/products/');
+    const response = await api.options(API_ENDPOINTS.products.products);
     logger.info('Product API response', {
       method: 'OPTIONS',
-      url: '/products/',
+      url: API_ENDPOINTS.products.products,
       response: response.data,
     });
     return response.data;
@@ -522,3 +534,16 @@ export const getProductOptions = async () => {
     return null;
   }
 };
+
+const productService = {
+  getProducts,
+  getProductSummaries,
+  getProductById,
+  getSimilarProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getProductOptions,
+};
+
+export default productService;

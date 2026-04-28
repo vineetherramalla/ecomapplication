@@ -1,20 +1,25 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, LogOut, User } from 'lucide-react';
+import { Heart, Search, LogOut, User } from 'lucide-react';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 import { useProducts } from '@/features/catalog/hooks/useProducts';
 import { isAdminUser } from '@/features/auth/utils/access';
 import { getBrandName, resolveAssetUrl } from '../../api/apiUtils';
+import searchApi from '@/api/searchApi';
+import { useWishlist } from '@/features/wishlist/hooks/useWishlist';
 
 function TopHeader({ profile, handleLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [remoteSuggestions, setRemoteSuggestions] = useState([]);
   const searchContainerRef = useRef(null);
   const deferredSearchTerm = useDeferredValue(searchTerm);
   
   const { products = [], brands = [] } = useProducts() || {};
+  const wishlist = useWishlist();
+  const wishlistCount = wishlist?.count || 0;
   const urlSearchTerm = useMemo(
     () => new URLSearchParams(location.search).get('search') || '',
     [location.search],
@@ -36,8 +41,38 @@ function TopHeader({ profile, handleLogout }) {
 
   const trimmedQuery = deferredSearchTerm.trim().toLowerCase();
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (trimmedQuery.length < 2) {
+      setRemoteSuggestions([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const suggestions = await searchApi.autocompleteSearch(trimmedQuery);
+        if (isMounted) {
+          setRemoteSuggestions(suggestions);
+        }
+      } catch {
+        if (isMounted) {
+          setRemoteSuggestions([]);
+        }
+      }
+    }, 180);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timer);
+    };
+  }, [trimmedQuery]);
+
   const searchResults = useMemo(() => {
-    if (!trimmedQuery || !products?.length) return { products: [], suggestions: [] };
+    if (!trimmedQuery) return { products: [], suggestions: [] };
+    if (!products?.length) return { products: [], suggestions: remoteSuggestions.slice(0, 6) };
     const matchedProducts = products.filter((product) => {
       const brandName = getBrandName(product.brand, brands);
 
@@ -58,9 +93,9 @@ function TopHeader({ profile, handleLogout }) {
 
     return {
        products: matchedProducts.slice(0, 4),
-       suggestions: Array.from(suggestSet).slice(0, 6)
+       suggestions: Array.from(new Set([...remoteSuggestions, ...suggestSet])).slice(0, 6)
     };
-  }, [trimmedQuery, products, brands]);
+  }, [trimmedQuery, products, brands, remoteSuggestions]);
 
   const handleSearchSubmit = (event) => {
     if (event) event.preventDefault();
@@ -86,14 +121,27 @@ function TopHeader({ profile, handleLogout }) {
               <img
                 src={logo}
                 alt="Nx Sys Distribution"
-                className="h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105 lg:h-10"
-                width="180"
-                height="40"
+                className="h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105 lg:h-16"
+                width="240"
+                height="64"
               />
             </NavLink>
 
             {/* Mobile Auth Actions - Display as small icons or text on mobile */}
             <div className="flex items-center gap-2 lg:hidden">
+              <Link
+                to="/wishlist"
+                className="relative p-1 text-textMain transition-colors hover:text-primary"
+                title="Wishlist"
+                aria-label="Wishlist"
+              >
+                <Heart size={18} />
+                {wishlistCount ? (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-black text-textMain">
+                    {wishlistCount > 9 ? '9+' : wishlistCount}
+                  </span>
+                ) : null}
+              </Link>
               {!profile ? (
                 <div className="flex items-center gap-1.5">
                   <Link
@@ -248,6 +296,19 @@ function TopHeader({ profile, handleLogout }) {
 
           {/* Desktop Auth Actions - Hidden on mobile, third on desktop grid */}
           <div className="hidden lg:flex lg:items-center lg:gap-3 lg:order-3">
+            <Link
+              to="/wishlist"
+              className="relative inline-flex min-h-[46px] w-[46px] items-center justify-center rounded-xl border border-black/5 bg-white text-textMain shadow-sm transition-all hover:bg-slate-50"
+              title="Wishlist"
+              aria-label="Wishlist"
+            >
+              <Heart size={17} />
+              {wishlistCount ? (
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-black text-textMain">
+                  {wishlistCount > 99 ? '99+' : wishlistCount}
+                </span>
+              ) : null}
+            </Link>
             {!profile ? (
               <>
                 <NavLink

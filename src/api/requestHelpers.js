@@ -1,5 +1,5 @@
 import { extractList, unwrapResponse } from './apiUtils';
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 const hasValue = (value) => value !== undefined && value !== null && value !== '';
 

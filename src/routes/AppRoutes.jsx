@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ScrollToTop from '@/components/common/ScrollToTop';
 import ToastNotification from '@/components/common/ToastNotification';
-import PageLoader from '@/shared/components/feedback/PageLoader';
+import PageLoader from '@/components/common/feedback/PageLoader';
 
 const Login = lazy(() => import('@/pages/auth/Login'));
 const Register = lazy(() => import('@/pages/auth/Register'));

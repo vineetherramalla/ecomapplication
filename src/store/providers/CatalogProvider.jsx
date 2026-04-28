@@ -12,7 +12,7 @@ import {
   getCatalogSyncVersion,
 } from '@/store/catalog/catalogSyncStore';
 import { CatalogContext } from '@/store/contexts/catalogContext';
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 export function CatalogProvider({ children }) {
   const [categories, setCategories] = useState([]);

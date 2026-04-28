@@ -4,7 +4,7 @@ import {
   deleteProduct,
   getProducts,
   updateProduct,
-} from '@/features/catalog/services/productService';
+} from '@/api/productApi';
 import { getApiErrorMessage } from '@/api/apiUtils';
 import {
   CATALOG_SYNC_EVENT,
@@ -13,7 +13,7 @@ import {
 } from '@/store/catalog/catalogSyncStore';
 import { CatalogContext } from '@/store/contexts/catalogContext';
 import { ProductContext } from '@/store/contexts/productContext';
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 const mergeProductIntoList = (currentProducts, nextProduct) => {
   const nextId = String(nextProduct?.id || '');
@@ -31,41 +31,90 @@ export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
   const latestProductVersionRef = useRef(getCatalogSyncVersion());
+  const activeRequestRef = useRef(null);
+  const hasFetchedInitialProductsRef = useRef(false);
+  const isMountedRef = useRef(true);
 
-  const { categories = [], subcategories = [], brands = [], loading: catalogLoading } = catalog || {};
+  const {
+    categories = [],
+    subcategories = [],
+    subcategoriesByCategory = {},
+    brands = [],
+    loading: catalogLoading,
+  } = catalog || {};
+
+  const catalogSnapshotRef = useRef({ categories, subcategories, brands });
+  
+  useEffect(() => {
+    catalogSnapshotRef.current = { categories, subcategories, brands };
+  }, [categories, subcategories, brands]);
 
   const refreshProducts = useCallback(async (options = {}) => {
-    const { silent = false } = options;
+    const { silent = false, force = false } = options;
+
+    if (activeRequestRef.current && !force) {
+      return activeRequestRef.current;
+    }
 
     if (!silent) {
       setLoading(true);
     }
     setError(null);
 
-    try {
-      const productRes = await getProducts({
-        categories,
-        subcategories,
-        brands,
-      });
-      setProducts(Array.isArray(productRes) ? productRes : []);
-    } catch (err) {
-      const errorMsg = getApiErrorMessage(err, 'Failed to fetch products');
-      logger.error('ProductContext: Failed to fetch products:', errorMsg, err);
-      setError(errorMsg);
-    } finally {
-      if (!silent) {
-        setLoading(false);
+    const request = (async () => {
+      try {
+        const productRes = await getProducts({
+          categories: catalogSnapshotRef.current.categories,
+          subcategories: catalogSnapshotRef.current.subcategories,
+          brands: catalogSnapshotRef.current.brands,
+        });
+        
+        if (!isMountedRef.current) return productRes;
+
+        setProducts(Array.isArray(productRes) ? productRes : []);
+        return productRes;
+      } catch (err) {
+        if (!isMountedRef.current) return null;
+
+        if (err?.response?.status === 429) {
+          console.warn("Too many requests. Please wait.");
+        }
+        
+        const errorMsg = getApiErrorMessage(err, 'Failed to fetch products');
+        logger.error('ProductContext: Failed to fetch products:', errorMsg, err);
+        setError(errorMsg);
+        return null;
+      } finally {
+        if (activeRequestRef.current === request) {
+          activeRequestRef.current = null;
+        }
+        if (!silent && isMountedRef.current) {
+          setLoading(false);
+        }
       }
-    }
-  }, [brands, categories, subcategories]);
+    })();
+
+    activeRequestRef.current = request;
+    return request;
+  }, []);
 
   useEffect(() => {
-    if (!catalogLoading) {
-      refreshProducts();
+    if (catalogLoading || hasFetchedInitialProductsRef.current) {
+      return;
     }
+    
+    hasFetchedInitialProductsRef.current = true;
+    refreshProducts();
   }, [catalogLoading, refreshProducts]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const syncProductsIfNeeded = (nextVersion) => {
@@ -104,7 +153,7 @@ export function ProductProvider({ children }) {
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [refreshProducts, latestProductVersionRef]);
+  }, [refreshProducts]);
 
   const topSellingProducts = useMemo(
     () => products.filter((product) => product.topSelling).slice(0, 8),
@@ -141,6 +190,7 @@ export function ProductProvider({ children }) {
       },
       categories,
       subcategories,
+      subcategoriesByCategory,
       brands,
     }),
     [
@@ -153,6 +203,7 @@ export function ProductProvider({ children }) {
       products,
       refreshProducts,
       subcategories,
+      subcategoriesByCategory,
       topSellingProducts,
     ],
   );

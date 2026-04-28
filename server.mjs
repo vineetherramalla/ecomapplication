@@ -7,11 +7,12 @@ import { access, readFile, stat } from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { API_PROXY_ROOTS } from './src/api/endpoints.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, 'dist');
 const indexFile = join(distDir, 'index.html');
-const DEFAULT_API_PROXY_TARGET = 'http://192.168.0.113:8000';
+const DEFAULT_API_PROXY_TARGET = 'http://127.0.0.1:8000';
 
 const loadDotEnv = async () => {
   const envFile = join(__dirname, '.env');
@@ -90,6 +91,9 @@ const getDefaultHeaders = () => ({
   'X-Frame-Options': 'DENY',
 });
 
+const isBackendPath = (pathname) =>
+  API_PROXY_ROOTS.some((root) => pathname === root.replace(/\/$/, '') || pathname.startsWith(root));
+
 const sendJson = (response, statusCode, payload) => {
   const body = JSON.stringify(payload);
   response.writeHead(statusCode, {
@@ -121,7 +125,10 @@ const proxyRequest = (request, response, requestUrl, upstreamOrigin) => {
     return;
   }
 
-  const upstreamUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, `${upstreamOrigin}/`);
+  const upstreamPath = requestUrl.pathname.startsWith('/api')
+    ? requestUrl.pathname.replace(/^\/api/, '') || '/'
+    : requestUrl.pathname;
+  const upstreamUrl = new URL(`${upstreamPath}${requestUrl.search}`, `${upstreamOrigin}/`);
   const proxyTransport = upstreamUrl.protocol === 'https:' ? httpsRequest : httpRequest;
     // point to the external domain instead of the private upstream address.
   const headers = { ...request.headers, host: request.headers.host || upstreamUrl.host };
@@ -153,7 +160,7 @@ const proxyRequest = (request, response, requestUrl, upstreamOrigin) => {
         }
       });
 
-      if (requestUrl.pathname.startsWith('/api/')) {
+      if (isBackendPath(requestUrl.pathname)) {
         responseHeaders['Cache-Control'] = 'no-store';
         responseHeaders.Pragma = 'no-cache';
       }
@@ -196,7 +203,7 @@ const start = async () => {
       return;
     }
 
-    if (requestUrl.pathname.startsWith('/api/') || requestUrl.pathname.startsWith('/media/')) {
+    if (isBackendPath(requestUrl.pathname)) {
       proxyRequest(request, response, requestUrl, upstreamOrigin);
       return;
     }

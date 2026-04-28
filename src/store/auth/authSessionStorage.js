@@ -1,4 +1,4 @@
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 import { isAdminUser } from '@/features/auth/utils/access';
 
 const STORAGE_KEYS = {

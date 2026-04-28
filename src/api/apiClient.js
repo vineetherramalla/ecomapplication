@@ -4,6 +4,7 @@ import { getNormalizedApiError } from './errorHandler';
 import { showToast } from '../utils/helpers';
 import { authSessionStorage } from '@/store/auth/authSessionStorage';
 import { isAdminUser } from '@/features/auth/utils/access';
+import { API_ENDPOINTS } from './endpoints';
 
 const DEFAULT_API_BASE_PATH = '/api';
 
@@ -17,9 +18,6 @@ const resolveApiBaseURL = () => {
 
   if (explicitOrigin && explicitOrigin !== '/') {
     const normalizedOrigin = normalizeBaseUrl(explicitOrigin);
-    if (/^(?:[a-z][a-z\d+.-]*:)?\/\//i.test(normalizedOrigin)) {
-      return normalizedOrigin.endsWith('/api') ? normalizedOrigin : `${normalizedOrigin}/api`;
-    }
     return normalizedOrigin;
   }
 
@@ -43,7 +41,14 @@ const api = axios.create({
 
 let refreshPromise = null;
 
-const REFRESH_SKIP_PATHS = ['/login/', '/token/', '/token/refresh/', '/register/', '/verify-otp/', '/resend-otp/'];
+const REFRESH_SKIP_PATHS = [
+  API_ENDPOINTS.auth.login,
+  API_ENDPOINTS.auth.token,
+  API_ENDPOINTS.auth.refresh,
+  API_ENDPOINTS.auth.register,
+  API_ENDPOINTS.auth.verifyOtp,
+  API_ENDPOINTS.auth.resendOtp,
+];
 
 const getLoginRedirectPath = () =>
   window.location.pathname.startsWith('/admin') ? '/admin' : '/login';
@@ -59,7 +64,7 @@ const refreshSessionToken = async () => {
 
   if (!refreshPromise) {
     refreshPromise = publicApi
-      .post('/token/refresh/', { refresh: refreshToken }, { suppressGlobalErrorToast: true })
+      .post(API_ENDPOINTS.auth.refresh, { refresh: refreshToken }, { suppressGlobalErrorToast: true })
       .then((response) => {
         const nextToken =
           response?.data?.access_token ||
@@ -158,7 +163,7 @@ function handleApiError(error, { requiresAuth }) {
     errorData?.code === 'user_not_found' ||
     errorString.toLowerCase().includes('user matching query does not exist') ||
     errorString.toLowerCase().includes('user not found');
-  const isRefreshFailure = url.includes('/token/refresh/') && status >= 500;
+  const isRefreshFailure = url.includes(API_ENDPOINTS.auth.refresh) && status >= 500;
 
   if (!suppressGlobalToast && status === 429) {
     showToast({

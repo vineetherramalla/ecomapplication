@@ -1,4 +1,4 @@
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 const RFQ_INTENT_KEY = 'pending_rfq_intent';
 const canUseSessionStorage =

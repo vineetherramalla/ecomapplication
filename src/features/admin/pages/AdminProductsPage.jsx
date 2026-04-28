@@ -6,7 +6,7 @@ import {
   deleteProduct,
   getProducts,
   updateProduct,
-} from '@/features/catalog/services/productService';
+} from '@/api/productApi';
 import { showToast } from '../../../utils/helpers';
 import AdminDataTable from '../components/AdminDataTable';
 import AdminPageHeader from '../components/AdminPageHeader';
@@ -38,6 +38,7 @@ function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [brands, setBrands] = useState([]);
   const [productFlags, setProductFlags] = useState([]);
+  const [saveError, setSaveError] = useState(null);
 
   const loadCatalog = async () => {
     setLoading(true);
@@ -91,11 +92,13 @@ function AdminProductsPage() {
   });
 
   const openAdd = () => {
+    setSaveError(null);
     setActiveProduct(null);
     setEditorOpen(true);
   };
 
   const openEdit = (product) => {
+    setSaveError(null);
     setActiveProduct(product);
     setEditorOpen(true);
   };
@@ -114,10 +117,13 @@ function AdminProductsPage() {
       }
       setEditorOpen(false);
       setActiveProduct(null);
+      setSaveError(null);
     } catch (err) {
+      const errorMessage = getApiErrorMessage(err, 'Product save failed');
+      setSaveError(errorMessage);
       showToast({
         title: 'Unable to save product',
-        message: getApiErrorMessage(err, 'Product save failed'),
+        message: errorMessage,
         type: 'error',
       });
     } finally {
@@ -330,9 +336,11 @@ function AdminProductsPage() {
         setBrands={setBrands}
         productFlags={productFlags}
         submitting={saving}
+        error={saveError}
         onClose={() => {
           setEditorOpen(false);
           setActiveProduct(null);
+          setSaveError(null);
         }}
         onSubmit={handleSave}
       />

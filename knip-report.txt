@@ -1,0 +1,154 @@
+Unused files (35)
+.gemini/scratch/find_unused.cjs                          
+src/api/contactApi.js                                    
+src/app/router/AppRouter.jsx                             
+src/components/auth/ProtectedRoute.jsx                   
+src/components/auth/RoleBasedRoute.jsx                   
+src/features/admin/AdminRoutes.jsx                       
+src/features/admin/components/QuoteRequestModal.jsx      
+src/features/admin/pages/AdminUnauthorizedPage.jsx       
+src/features/auth/utils/sessionStorage.js                
+src/features/catalog/context/catalog-context.js          
+src/features/catalog/context/CatalogContext.jsx          
+src/features/catalog/context/product-context.js          
+src/features/catalog/context/ProductContext.jsx          
+src/features/catalog/services/catalogSync.js             
+src/features/catalog/services/categoryNavbarGroupStore.js
+src/features/contact/services/contactService.js          
+src/features/store/routes/StoreRoutes.jsx                
+src/hooks/useApi.js                                      
+src/routes/guards/ProtectedRoute.jsx                     
+src/routes/guards/RoleBasedRoute.jsx                     
+src/services/authService.js                              
+src/services/catalogService.js                           
+src/services/catalogSync.js                              
+src/services/categoryNavbarGroupStore.js                 
+src/services/categoryService.js                          
+src/services/contactService.js                           
+src/services/dashboardService.js                         
+src/services/enquiryService.js                           
+src/services/inventoryService.js                         
+src/services/productService.js                           
+src/services/rfqIntentService.js                         
+src/services/rfqService.js                               
+src/services/serviceHelpers.js                           
+src/services/subcategoryService.js                       
+test_api.js                                              
+Unused dependencies (1)
+react-image-magnify  package.json:20:6
+Unused exports (97)
+getAnalyticsDashboard                                  src/api/analyticsApi.js:7:14                              
+getSalesAnalytics                                      src/api/analyticsApi.js:8:14                              
+getCustomerAnalytics                                   src/api/analyticsApi.js:9:14                              
+getReviewAnalytics                                     src/api/analyticsApi.js:10:14                             
+getWishlistAnalytics                                   src/api/analyticsApi.js:11:14                             
+getInventoryAnalytics                                  src/api/analyticsApi.js:12:14                             
+getComprehensiveAnalytics                              src/api/analyticsApi.js:13:14                             
+analyticsApi                                           src/api/analyticsApi.js:15:14                             
+requestTimeout                                         src/api/apiClient.js:28:14                                
+baseURL                                                src/api/apiClient.js:29:14                                
+normalizeBrand                                         src/api/apiUtils.js:310:14                                
+normalizeInventoryItem                                 src/api/apiUtils.js:558:14                                
+resolveCategoryId                                      src/api/apiUtils.js:776:14                                
+resolveSubcategoryId                                   src/api/apiUtils.js:789:14                                
+serializeProductFormData                               src/api/apiUtils.js:842:14                                
+baseURL                                                src/api/axiosInstance.js:1:19                             
+getBrandById                                           src/api/brandApi.js:55:14                                 
+API_MODULE_ROOTS                                       src/api/endpoints.js:7:14                                 
+default                                      variable  src/api/endpoints.js:81:16                                
+extractApiFieldErrors                                  src/api/errorHandler.js:59:14                             
+extractApiErrorMessage                                 src/api/errorHandler.js:75:14                             
+normalizeApiError                                      src/api/errorHandler.js:105:14                            
+getImageById                                           src/api/imageApi.js:16:14                                 
+updateImage                                            src/api/imageApi.js:22:14                                 
+getInventoryById               inventoryApi            src/api/inventoryApi.js:7:14                              
+updateInventoryStock           inventoryApi            src/api/inventoryApi.js:16:14                             
+deleteInventory                inventoryApi            src/api/inventoryApi.js:24:14                             
+normalizeReview                                        src/api/reviewApi.js:5:14                                 
+normalizeReviews                                       src/api/reviewApi.js:34:14                                
+getProductReviews                                      src/api/reviewApi.js:54:14                                
+getReviews                                             src/api/reviewApi.js:76:14                                
+getReviewById                                          src/api/reviewApi.js:79:14                                
+createReview                                           src/api/reviewApi.js:82:14                                
+updateReview                                           src/api/reviewApi.js:85:14                                
+deleteReview                                           src/api/reviewApi.js:88:14                                
+reviewApi                                              src/api/reviewApi.js:91:14                                
+searchProducts                                         src/api/searchApi.js:17:14                                
+autocompleteSearch                                     src/api/searchApi.js:22:14                                
+getSearchFacets                                        src/api/searchApi.js:39:14                                
+searchApi                                              src/api/searchApi.js:47:14                                
+getSpecificationById                                   src/api/specificationApi.js:17:14                         
+getSpecCategories                                      src/api/specificationApi.js:29:14                         
+normalizeWishlistPayload                               src/api/wishlistApi.js:17:14                              
+getWishlist                                            src/api/wishlistApi.js:39:14                              
+setWishlist                                            src/api/wishlistApi.js:42:14                              
+addWishlistItem                                        src/api/wishlistApi.js:53:14                              
+removeWishlistItem                                     src/api/wishlistApi.js:60:14                              
+wishlistApi                                            src/api/wishlistApi.js:79:14                              
+getParentCategoryId                                    src/features/admin/utils/adminUtils.js:1:14               
+isTopLevelCategory                                     src/features/admin/utils/adminUtils.js:4:14               
+getSubcategories                                       src/features/admin/utils/adminUtils.js:9:14               
+authService                                            src/features/auth/services/authService.js:148:14          
+normalizeRoleValue                                     src/features/auth/utils/access.js:24:14                   
+isAdminRole                                            src/features/auth/utils/access.js:105:14                  
+hasAdminGroup                                          src/features/auth/utils/access.js:115:14                  
+default                                      variable  src/features/catalog/services/catalogService.js:137:16    
+getCategoryById                                        src/features/catalog/services/categoryService.js:49:14    
+default                                      variable  src/features/catalog/services/categoryService.js:168:16   
+getProductById                                         src/features/catalog/services/productService.js:11:14     
+getSimilarProducts                                     src/features/catalog/services/productService.js:12:14     
+productService                                         src/features/catalog/services/productService.js:17:14     
+getSubcategories                                       src/features/catalog/services/subcategoryService.js:21:14 
+getSubcategoryById                                     src/features/catalog/services/subcategoryService.js:39:14 
+updateSubcategory                                      src/features/catalog/services/subcategoryService.js:52:14 
+default                                      variable  src/features/catalog/services/subcategoryService.js:128:16
+default                                      variable  src/features/dashboard/services/dashboardService.js:14:16 
+submitEnquiry                                          src/features/enquiry/services/enquiryService.js:7:14      
+enquiryService                                         src/features/enquiry/services/enquiryService.js:12:14     
+getInventory                                           src/features/inventory/services/inventoryService.js:3:14  
+updateStock                                            src/features/inventory/services/inventoryService.js:5:14  
+createInventory                                        src/features/inventory/services/inventoryService.js:11:14 
+inventoryService                                       src/features/inventory/services/inventoryService.js:19:14 
+rfqIntentService                                       src/features/rfq/services/rfqIntentService.js:7:14        
+getRequests                                            src/features/rfq/services/rfqService.js:11:14             
+createRequest                                          src/features/rfq/services/rfqService.js:12:14             
+getRequestById                                         src/features/rfq/services/rfqService.js:13:14             
+updateRequest                                          src/features/rfq/services/rfqService.js:14:14             
+getProducts                                            src/features/rfq/services/rfqService.js:15:14             
+quoteRFQ                                               src/features/rfq/services/rfqService.js:17:14             
+rejectRFQ                                              src/features/rfq/services/rfqService.js:23:14             
+deleteRequest                                          src/features/rfq/services/rfqService.js:25:14             
+rfqService                                             src/features/rfq/services/rfqService.js:27:14             
+WishlistProvider                             function  src/features/wishlist/context/WishlistProvider.jsx:45:17  
+default                                      variable  src/features/wishlist/hooks/useWishlist.js:6:16           
+logger                                                 src/shared/lib/logger.js:9:14                             
+default                                      variable  src/store/auth/authSessionStorage.js:193:16               
+default                                      variable  src/store/catalog/catalogSyncStore.js:30:16               
+default                                      variable  src/store/catalog/categoryNavbarGroupStore.js:83:16       
+formatNumber                                           src/utils/helpers.js:10:14                                
+getRatingLabel                                         src/utils/helpers.js:23:14                                
+SPECIFICATION_FIELDS                                   src/utils/specifications.js:1:14                          
+formatSpecificationLabel                               src/utils/specifications.js:75:14                         
+normalizeSpecificationSection                          src/utils/specifications.js:87:14                         
+toSpecificationRecords                                 src/utils/specifications.js:119:14                        
+getSpecificationHighlights                             src/utils/specifications.js:168:14                        
+buildSpecificationFormState                            src/utils/specifications.js:204:14                        
+buildSpecificationPayload                              src/utils/specifications.js:225:14                        
+Duplicate exports (16)
+analyticsApi|default        src/api/analyticsApi.js                            
+API_ENDPOINTS|default       src/api/endpoints.js                               
+reviewApi|default           src/api/reviewApi.js                               
+searchApi|default           src/api/searchApi.js                               
+wishlistApi|default         src/api/wishlistApi.js                             
+authService|default         src/features/auth/services/authService.js          
+productService|default      src/features/catalog/services/productService.js    
+subcategoryService|default  src/features/catalog/services/subcategoryService.js
+enquiryService|default      src/features/enquiry/services/enquiryService.js    
+inventoryService|default    src/features/inventory/services/inventoryService.js
+rfqIntentService|default    src/features/rfq/services/rfqIntentService.js      
+rfqService|default          src/features/rfq/services/rfqService.js            
+WishlistProvider|default    src/features/wishlist/context/WishlistProvider.jsx 
+useWishlist|default         src/features/wishlist/hooks/useWishlist.js         
+logger|default              src/shared/lib/logger.js                           
+authSessionStorage|default  src/store/auth/authSessionStorage.js               
+Configuration hints (1)

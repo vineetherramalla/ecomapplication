@@ -13,7 +13,7 @@ import {
 } from '@/api/authApi';
 import { authSessionStorage } from '@/store/auth/authSessionStorage';
 import { getAuthUserSource, isAdminUser, resolveUserRole } from '@/features/auth/utils/access';
-import logger from '@/shared/lib/logger';
+import logger from '@/utils/logger';
 
 const buildUserProfile = (payload, credentials) => {
   const source = getAuthUserSource(payload);
@@ -81,6 +81,25 @@ const buildUserFromToken = (token) => {
   }
 
   return buildUserProfile(tokenPayload, {});
+};
+
+const getTokenPayload = (token) => {
+  if (!token) {
+    return null;
+  }
+
+  const authData = extractAuthData({ access_token: token });
+  return authData?.admin && typeof authData.admin === 'object' ? authData.admin : null;
+};
+
+const isTokenExpired = (token, skewMs = 15_000) => {
+  const payload = getTokenPayload(token);
+
+  if (!payload?.exp) {
+    return false;
+  }
+
+  return Number(payload.exp) * 1000 <= Date.now() + skewMs;
 };
 
 const mergeSessionUser = (storedUser, tokenUser) => {
@@ -177,9 +196,14 @@ export const authService = {
 
   register: async (userData) => {
     try {
+      const fullName = String(userData.fullname || userData.full_name || userData.name || '').trim();
+      const [firstName, ...restName] = fullName.split(/\s+/).filter(Boolean);
+
       const payload = {
-        username: userData.email,
-        fullname: userData.fullname || userData.full_name || userData.name,
+        username: userData.username || userData.email,
+        first_name: userData.first_name || firstName || '',
+        last_name: userData.last_name || restName.join(' '),
+        fullname: fullName,
         company_name: userData.company_name,
         company_address: userData.company_address,
         email: userData.email,
@@ -339,6 +363,10 @@ export const authService = {
     return user ? resolveUserRole(user) : null;
   },
 
+  hasValidAccessToken: () => {
+    const token = authSessionStorage.getToken();
+    return Boolean(token) && !isTokenExpired(token);
+  },
   isAuthenticated: () => !!authService.getToken(),
   isAdminUser,
   isAdmin: () => isAdminUser(authService.getCurrentUser()),

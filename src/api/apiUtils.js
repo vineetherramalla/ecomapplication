@@ -10,7 +10,8 @@ export const normalizeBaseUrl = (value) => {
     return '/api';
   }
 
-  return value.endsWith('/') ? value.slice(0, -1) : value;
+  const normalizedValue = value.endsWith('/') && value !== '/' ? value.slice(0, -1) : value;
+  return normalizedValue === '/' ? '' : normalizedValue;
 };
 
 export const unwrapResponse = (response) => response?.data ?? response ?? null;
@@ -475,22 +476,32 @@ export const normalizeProduct = (product, catalog = {}) => {
     specifications: normalizedSpecifications,
     highlights: (() => {
       const h = product.highlights ?? product.product_highlights ?? product.key_features ?? [];
-      let highlightArray = [];
-      if (typeof h === 'string' && (h.startsWith('[') || h.startsWith('{'))) {
-        try {
-          highlightArray = JSON.parse(h);
-        } catch {
-          highlightArray = [h];
+      let rawArray = [];
+
+      if (typeof h === 'string') {
+        if (h.startsWith('[') || h.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(h);
+            rawArray = Array.isArray(parsed) ? parsed : [parsed];
+          } catch {
+            rawArray = [h];
+          }
+        } else {
+          rawArray = [h];
         }
-      } else if (typeof h === 'string') {
-        highlightArray = h
-          .split(/\r?\n/)
-          .map((item) => item.trim())
-          .filter(Boolean);
-      } else {
-        highlightArray = Array.isArray(h) ? h : (h ? [h] : []);
+      } else if (Array.isArray(h)) {
+        rawArray = h;
+      } else if (h) {
+        rawArray = [h];
       }
-      return highlightArray.map(item => (typeof item === 'object' && item !== null ? item.text || '' : String(item)));
+
+      return rawArray
+        .flatMap((item) => {
+          const text = typeof item === 'object' && item !== null ? item.text || item.value || '' : String(item);
+          return text.split(/\r?\n/);
+        })
+        .map((item) => item.trim())
+        .filter(Boolean);
     })(),
   };
 };

@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const proxyTarget = env.VITE_API_PROXY_TARGET || env.API_PROXY_TARGET || 'http://192.168.0.113:8000';
+  const proxyTarget = env.VITE_API_PROXY_TARGET || env.API_PROXY_TARGET || 'http://192.168.0.114:8000';
 
   return {
     plugins: [react()],
@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: proxyTarget,
           changeOrigin: true,
+          rewrite: (requestPath) => requestPath.replace(/^\/api/, '') || '/',
         },
         '/media': {
           target: proxyTarget,
